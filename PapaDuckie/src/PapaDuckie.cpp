@@ -5,6 +5,7 @@
  * For comprehensive documentation and examples, please visit:
  * https://docs.particle.io/firmware/best-practices/firmware-template/
  */
+// demensions of box 4 long X2.5 tall inch,3 inch wide hole for plug
 
 #include "Particle.h"
 #include "hue.h"
@@ -23,10 +24,10 @@
 SYSTEM_MODE(MANUAL); // connecting to wifi
 
 // Global variables
-Button button(D15);
-Button encoderButton(D16);
-const int PINA = D8;
-const int PINB = D9;
+// Button button(D15);
+Button encoderButton(D15);
+const int PINA = D4;
+const int PINB = D5;
 Encoder encoder(PINA, PINB);
 bool buttonState;
 
@@ -134,24 +135,13 @@ void setup()
 
 void loop()
 {
-    // Add your main program logic here
-    // Adafruit_MQTT_Subscribe *subscription;
-    // while ((subscription = mqtt.readSubscription(100)))
-    //{
-    //  if (subscription == &volSubFeed)
-    //{
-    //  curVol = atoi((char *)volSubFeed.lastread);
-    // volPubFeed.publish(curVol);
-    // myDFPlayer.volume(curVol);
-    // myDFPlayer.volumeDown();
-    // myDFPlayer.volumeUp();
-    // lastVol = curVol;
-    //  }
-    //  }
-
-    //  if ((curVol != lastVol))
-    // {
-    // if (mqtt.Update())
-    // {
-    // volPubFeed.publish(curVol);
+    if(encoderButton.isClicked()){
+        Serial.printf("on/off\n");
+        buttonState = !buttonState;
+    }
+    if (buttonState == TRUE){
+        wemoWrite(WEMOS[], LOW);
+    }else {
+        wemoWrite(WEMOS[], HIGH);
+    }
 }
