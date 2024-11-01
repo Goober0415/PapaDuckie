@@ -136,6 +136,8 @@ void loop()
     temp = bme.readTemperature();
 
     display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(WHITE);
     display.setCursor(10, 0);
     display.print("Temp: ");
     display.print(temp);
@@ -203,6 +205,7 @@ void hueOnOff()
     setHue(HUE5, false, HueRainbow[color % 7], random(32, 255), 160);
     setHue(HUE6, false, HueRainbow[color % 7], random(32, 255), 160);
     myMp3Player.stop();
+    myMp3Player.volume(0);
   }
   else
   {
@@ -213,6 +216,7 @@ void hueOnOff()
     setHue(HUE5, true, HueRainbow[color % 7], random(32, 255), 160);
     setHue(HUE6, true, HueRainbow[color % 7], random(32, 255), 160);
     hue++;
-    myMp3Player.play();
+    myMp3Player.loop(1);
+    myMp3Player.volume(10);
   }
 }
