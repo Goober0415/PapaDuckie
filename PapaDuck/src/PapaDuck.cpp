@@ -136,7 +136,7 @@ void loop()
     temp = bme.readTemperature();
 
     display.clearDisplay();
-    display.setTextSize(2);
+    display.setTextSize(1);
     display.setTextColor(WHITE);
     display.setCursor(10, 0);
     display.print("Temp: ");
