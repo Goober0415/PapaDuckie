@@ -23,12 +23,12 @@ const int PINA = D4, PINB = D5, PBUTTON = D3, ESWTCH = D15, p2Button = D13;
 const int HUES[] = {1, 2, 3, 4, 5, 6};
 const int WEMOS[] = {0, 1, 2, 3, 4, 5};
 const int SATURATION = 255;
-MAXENCPOS = 96, MAXBRITE = 255, MAXVOLUME = 30;
+const int MAXENCPOS = 96, MAXBRITE = 255, MAXVOLUME = 30;
 bool wemowrite, buttonState, switchState, player, status, playSong;
 unsigned long lastUpdateTime = 0, currentTime;
 float temp = 0.0, volume;
 int color = rainbow[0], hue = HueRainbow[color % 7];
-int i, timer, wemo, hue, brightness, position, lastpos;
+int i, timer, wemo, huey, brightness, position, lastpos;
 bool onOff, playPause;
 
 #define WIDTH 59
@@ -137,8 +137,8 @@ void setup()
   }
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  display.drawBitmap(duckie, WIDTH, HEIGHT, WHITE);
-  if (!myDFPlayer.begin(Serial1))
+  display.drawBitmap(duckie, WIDTH, HEIGHT, white);
+  if (!duckiePlayer.begin(Serial1))
   { // Use softwareSerial to communicate with mp3.
     Serial.printf("Unable to begin:\n");
     Serial.printf("1.Please recheck the connection!\n");
