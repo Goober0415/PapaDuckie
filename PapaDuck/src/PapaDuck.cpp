@@ -20,25 +20,16 @@ SYSTEM_MODE(MANUAL);
 const int PIXELCOUNT = 12, OLED_RESET = -1, HEXADDRESS = 0X76;
 const int SEALEVELPRESSURE_HPA = 1013.25, DEG = 0XB0, PERCENT = 0X25;
 const int PINA = D4, PINB = D5, PBUTTON = D3, ESWTCH = D15, p2Button = D13;
-const int HUE6 = 6, HUE5 = 5, HUE4 = 4, HUE3 = 3, HUE2 = 2, HUE1 = 1;
-const int WEMO5 = 5, WEMO4 = 4, WEMO3 = 3, WEMO2 = 2, WEMO1 = 1, WEMO0 = 0;
-bool wemowrite, buttonState, switchState, player, status;
-unsigned long lastUpdateTime = 0, currentTime;
-float temp = 0.0;
-int color = rainbow[0], hue = HueRainbow[color % 7];
-int i, timer, wemo, hueL;
-bool onOff;
-int brightness, position, lastPos;
+const int HUES[] = {1, 2, 3, 4, 5, 6};
+const int WEMOS[] = {0, 1, 2, 3, 4, 5};
 const int SATURATION = 255;
-const int MAXENCPOS = 96;
-const int MAXBRITE = 255;
-
-/**
- * Made with Marlin Bitmap Converter
- * https://marlinfw.org/tools/u8glib/converter.html
- *
- * This bitmap from the file 'dbb7d79069abd141f4d5e0bb7abff43a (2).jpg'
- */
+MAXENCPOS = 96, MAXBRITE = 255, MAXVOLUME = 30;
+bool wemowrite, buttonState, switchState, player, status, playSong;
+unsigned long lastUpdateTime = 0, currentTime;
+float temp = 0.0, volume;
+int color = rainbow[0], hue = HueRainbow[color % 7];
+int i, timer, wemo, hue, brightness, position, lastpos;
+bool onOff, playPause;
 
 #define WIDTH 59
 #define HEIGHT 64
@@ -113,9 +104,10 @@ Adafruit_NeoPixel pixel(PIXELCOUNT, SPI1, WS2812B);
 Adafruit_SSD1306 display(OLED_RESET);
 Adafruit_BME280 bme; // I2C
 Button pushButton(PBUTTON);
+Button pushButton2(p2Button);
 Button encoderSwitch(ESWTCH);
 Encoder encoder(PINA, PINB);
-DFRobotDFPlayerMini myMp3Player;
+DFRobotDFPlayerMini duckiePlayer;
 
 void setup()
 {
@@ -145,7 +137,18 @@ void setup()
   }
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  display.drawBitmap(icons[f][XPOS], icons[f][YPOS], duckie, WIDTH, HEIGHT, WHITE);
+  display.drawBitmap(duckie, WIDTH, HEIGHT, WHITE);
+  if (!myDFPlayer.begin(Serial1))
+  { // Use softwareSerial to communicate with mp3.
+    Serial.printf("Unable to begin:\n");
+    Serial.printf("1.Please recheck the connection!\n");
+    Serial.printf("2.Please insert the SD card!\n");
+    while (true)
+      ;
+  }
+  Serial.printf("DFPlayer Mini online.\n");
+  Wire.begin();
+  Serial.println("Ready to go");
 }
 
 void loop()
@@ -184,8 +187,16 @@ void loop()
   if (pushButton.isClicked())
   {
     onOff = !onOff;
-    setHue(HUE1, onOff, HueRainbow[color % 7], brightness, SATURATION);
-    Serial.printf("onOff %i\n", onOff);
+    setHue(HUES[hue], onOff, HueRainbow[color % 7], brightness, SATURATION);
+    duckiePlayer.volume(volume);
+    if (onOff)
+    {
+      duckiePlayer.play();
+    }
+    else
+    {
+      duckiePlayer.stop();
+    }
   }
 
   position = encoder.read(); // 0-96 encoder positions, 0-255 brightness
@@ -201,59 +212,41 @@ void loop()
 
   if (position != lastPos)
   {
-    Serial.printf("Encoder position %i\n", position);
+    // Serial.printf("Encoder position %i\n", position);
     brightness = position * (MAXBRITE / MAXENCPOS);
-    Serial.printf("Turning on Hue# %i\n", HUE1);
-    setHue(HUE1, onOff, HueRainbow[color % 7], brightness, SATURATION);
+    volume = position * (MAXVOLUME / MAXENCPOS);
+    // Serial.printf("Turning on Hue# %i\n", hue);
+    setHue(HUES[hue], onOff, HueRainbow[color % 7], brightness, SATURATION);
+    duckiePlayer.volume(volume);
     lastPos = position;
   }
 
   if (pushButton.isClicked())
   {
     color++;
-    setHue(HUE1, onOff, HueRainbow[color % 7], brightness, SATURATION);
+    for (hue = 1; hue <= 6; hue++)
+    {
+      setHue(HUES[hue], onOff, HueRainbow[color % 7], brightness, SATURATION);
+    }
   }
 
   if (p2Button.isClicked())
   {
     onOff = !onOff;
     Serial.printf("onOff %i\n", onOff);
-
-    if (onOff)
+    for (wemo = 0; wemo <= 6; wemo++)
     {
-      Serial.printf("Turning on Wemo# %i\n", WEMO2);
-      wemoWrite(WEMO2, HIGH);
-    }
+      if (onOff)
+      {
+        Serial.printf("Turning on Wemo# %i\n", wemo);
+        wemoWrite(WEMOS[wemo], HIGH);
+      }
 
-    else
-    {
-      Serial.printf("Turning off Wemo# %i\n", WEMO2);
-      wemoWrite(WEMO2, LOW);
+      else
+      {
+        Serial.printf("Turning off Wemo# %i\n", wemo);
+        wemoWrite(WEMOS[wemo], LOW);
+      }
     }
   }
 }
-
-// Serial.printf("DFRobot DFPlayer Mini Demo\n");
-// Serial.printf("Initializing DFPlayer ... (May take 3~5 seconds)\n");
-
-// if (!myMp3Player.begin(Serial1)){ // Use softwareSerial to communicate with mp3.
-//   Serial.printf("Unable to begin:\n");
-//   Serial.printf("1.Please recheck the connection!\n");
-//   Serial.printf("2.Please insert the SD card!\n");
-//   while (true);
-// }
-
-// Serial.printf("DFPlayer Mini online.\n");
-// Serial.println("Ready to go");
-// Serial.printf("DFRobot DFPlayer Mini Demo \nInitializing DFPlayer ... (May take 3~5 seconds)\n");
-
-// status = myMp3Player.begin(Serial1, false);
-// Serial.printf("Status = %i\n", status);
-
-// if (!status){
-//     Serial.printf("Unable to begin:\n");
-//     Serial.printf("1.Please recheck the connection!\n");
-//     Serial.printf("2.Please insert the SD card!\n");
-//     while (true);
-// }
-// Serial.printf("DFPlayer Mini online.\n");
